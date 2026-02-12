@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARC21 Training Interactive</title>
+<style>
+body{font-family:Tahoma,Arial; margin:0; background:#f4f6fb}
+header{background:#1e3a8a;color:white;padding:18px;text-align:center}
+.container{max-width:1100px;margin:auto;padding:20px}
+.search{width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;margin-bottom:20px;font-size:16px}
+.card{background:white;border-radius:14px;margin-bottom:12px;box-shadow:0 3px 10px rgba(0,0,0,.08);overflow:hidden}
+.card-header{padding:14px 18px;font-weight:bold;cursor:pointer;background:#e8edff}
+.card-body{display:none;padding:18px;line-height:1.8}
+.tag{color:#1e40af;font-weight:bold;font-size:18px}
+.lang{float:left;background:#2563eb;color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+.label{font-weight:bold;color:#0f172a}
+footer{text-align:center;padding:20px;color:#555}
+</style>
+</head>
+<body>
+<header>
+<h1>📚 التدريب التفاعلي لفهم حقول MARC21</h1>
+<button class="lang" onclick="toggleLang()">English / العربية</button>
+</header>
+<div class="container">
+<input class="search" placeholder="ابحث برقم الحقل مثل 245 أو كلمة Title" onkeyup="searchField(this.value)">
+<div id="fields"></div>
+</div>
+<footer>
+ملف تدريبي احترافي – فهرسة مارك 21<br>إعداد: عماد كاظم السعدي<br>جميع الحقوق محفوظة © 2024
+</footer>
+<script>
+let lang='ar';
+
+const marc=[
+{tag:'001',
+en:'Control Number: Unique record number assigned by the cataloging agency.',
+ar:'رقم الضبط: الرقم التعريفي الفريد للسجل الببليوغرافي الذي تنشئه المكتبة.'},
+
+{tag:'003',
+en:'Control Number Identifier: Identifies the agency that created the record.',
+ar:'معرّف جهة الضبط: يحدد المؤسسة أو المكتبة التي أنشأت السجل.'},
+
+{tag:'005',
+en:'Date and Time of Latest Transaction of the record.',
+ar:'تاريخ ووقت آخر تعديل تم على السجل الببليوغرافي.'},
+
+{tag:'020',
+en:'ISBN International Standard Book Number.',
+ar:'الردمك ISBN: الرقم الدولي المعياري للكتاب.'},
+
+{tag:'022',
+en:'ISSN International Standard Serial Number.',
+ar:'الترقيم الدولي للدوريات ISSN.'},
+
+{tag:'041',
+en:'Language code of the content.',
+ar:'رمز لغة المحتوى (مثل ara أو eng).'},
+
+{tag:'044',
+en:'Country of publication code.',
+ar:'رمز الدولة التي تم فيها النشر.'},
+
+{tag:'050',
+en:'Library of Congress Classification number.',
+ar:'رقم تصنيف مكتبة الكونغرس LCC.'},
+
+{tag:'080',
+en:'Universal Decimal Classification number.',
+ar:'رقم التصنيف العشري العالمي UDC.'},
+
+{tag:'082',
+en:'Dewey Decimal Classification number.',
+ar:'رقم تصنيف ديوي العشري المستخدم في ترتيب الكتب على الرفوف.'},
+
+{tag:'100',
+en:'Main entry Personal Name (author).',
+ar:'المدخل الرئيسي باسم الشخص (المؤلف الأساسي).'},
+
+{tag:'110',
+en:'Main entry Corporate body.',
+ar:'المدخل الرئيسي باسم هيئة أو مؤسسة.'},
+
+{tag:'111',
+en:'Main entry Conference/Meeting.',
+ar:'المدخل الرئيسي باسم مؤتمر أو ندوة.'},
+
+{tag:'245',
+en:'Title statement including subtitle.',
+ar:'بيان العنوان ويشمل العنوان الرئيسي والعنوان الفرعي.'},
+
+{tag:'246',
+en:'Variant title.',
+ar:'عنوان مغاير أو عنوان إضافي للعمل.'},
+
+{tag:'250',
+en:'Edition statement.',
+ar:'بيان الطبعة (مثل الطبعة الثانية).'},
+
+{tag:'260/264',
+en:'Publication information (place, publisher, date).',
+ar:'بيانات النشر: مكان النشر والناشر وتاريخ النشر.'},
+
+{tag:'300',
+en:'Physical description (pages, illustrations, size).',
+ar:'الوصف المادي: عدد الصفحات، الرسوم، الحجم.'},
+
+{tag:'336',
+en:'Content type.',
+ar:'نوع المحتوى (نص، صورة، صوت...).'},
+
+{tag:'490',
+en:'Series statement.',
+ar:'بيان السلسلة التي ينتمي إليها الكتاب.'},
+
+{tag:'500',
+en:'General note.',
+ar:'ملاحظات عامة على الكتاب.'},
+
+{tag:'502',
+en:'Thesis/dissertation note.',
+ar:'بيان الرسالة الجامعية (ماجستير/دكتوراه).'},
+
+{tag:'520',
+en:'Summary or abstract.',
+ar:'الملخص أو المستخلص.'},
+
+{tag:'650',
+en:'Topical subject heading.',
+ar:'رأس موضوع يعبّر عن موضوع الكتاب.'},
+
+{tag:'700',
+en:'Added personal name (secondary author).',
+ar:'مدخل إضافي باسم شخص (مؤلف مشارك أو محقق).'},
+
+{tag:'710',
+en:'Added corporate name.',
+ar:'مدخل إضافي باسم مؤسسة.'},
+
+{tag:'773',
+en:'Host item entry (article within journal/book).',
+ar:'بيان العمل المضيف مثل مقالة داخل مجلة.'},
+
+{tag:'856',
+en:'Electronic access URL.',
+ar:'الرابط الإلكتروني للوصول إلى النص الكامل أو الموقع.'}
+];
+
+function render(){
+const container=document.getElementById('fields');
+container.innerHTML='';
+marc.forEach(f=>{
+let card=document.createElement('div');
+card.className='card';
+card.innerHTML=`<div class='card-header'><span class='tag'>${f.tag}</span></div>
+<div class='card-body'>${lang==='ar'?f.ar:f.en}</div>`;
+card.querySelector('.card-header').onclick=()=>{
+let body=card.querySelector('.card-body');
+body.style.display=body.style.display==='block'?'none':'block';
+}
+container.appendChild(card);
+});
+}
+
+function toggleLang(){lang=lang==='ar'?'en':'ar';render();}
+
+function searchField(q){
+q=q.toLowerCase();
+const cards=document.querySelectorAll('.card');
+cards.forEach(c=>{
+let text=c.innerText.toLowerCase();
+c.style.display=text.includes(q)?'block':'none';
+});
+}
+
+render();
+</script>
+</body>
+</html>
+
+<!-- ====== MARC21 Generator Lab ====== -->
+<section id="marc-lab" style="margin-top:40px;padding:20px;border:1px solid #e5e7eb;border-radius:14px">
+  <h2 style="margin-bottom:10px">مختبر إنشاء سجل MARC21</h2>
+  <p style="margin-bottom:18px;color:#555">أدخل بيانات الكتاب ثم اضغط "توليد السجل" للحصول على صيغة MARC النصية (MRK) أو MARCXML جاهزة للاستيراد في Koha أو MarcEdit.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+    <label>001 رقم الضبط
+      <input id="f001" type="text" placeholder="1" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+    <label>100$a المؤلف
+      <input id="f100a" type="text" placeholder="اسم المؤلف" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+    <label>245$a العنوان
+      <input id="f245a" type="text" placeholder="عنوان الكتاب" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+    <label>245$b العنوان الفرعي
+      <input id="f245b" type="text" placeholder="العنوان الفرعي" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+    <label>245$c بيان المسؤولية
+      <input id="f245c" type="text" placeholder="تأليف ..." style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+    <label>264$b الناشر
+      <input id="f264b" type="text" placeholder="دار النشر" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+    <label>264$c سنة النشر
+      <input id="f264c" type="text" placeholder="2024" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+    <label>300$a الوصف المادي
+      <input id="f300a" type="text" placeholder="350 ص. ؛ 24 سم" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+    <label>650$a الموضوع
+      <input id="f650a" type="text" placeholder="المكتبات -- إدارة" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+    <label>082$a تصنيف ديوي
+      <input id="f082a" type="text" placeholder="025" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc">
+    </label>
+  </div>
+
+  <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+    <button onclick="generateMRK()" style="padding:10px 16px;border-radius:10px;border:0;background:#2563eb;color:white">توليد السجل (MRK)</button>
+    <button onclick="generateXML()" style="padding:10px 16px;border-radius:10px;border:0;background:#059669;color:white">توليد MARCXML</button>
+    <button onclick="copyOutput()" style="padding:10px 16px;border-radius:10px;border:0;background:#6b7280;color:white">نسخ</button>
+    <button onclick="downloadFile()" style="padding:10px 16px;border-radius:10px;border:0;background:#111827;color:white">تحميل</button>
+  </div>
+
+  <textarea id="output" rows="14" style="margin-top:16px;width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;font-family:monospace" placeholder="سيظهر سجل مارك هنا..."></textarea>
+</section>
+
+<script>
+function val(id){return (document.getElementById(id).value||"").trim();}
+
+function mrkLine(tag, ind, subs){
+  let line = `=${tag}  ${ind}`;
+  subs.forEach(s=>{ if(s.v) line += `$${s.c}${s.v}`; });
+  return line;
+}
+
+function generateMRK(){
+  const lines = [];
+  lines.push('=LDR  00000nam a2200000 a 4500');
+  if(val('f001')) lines.push(`=001  ${val('f001')}`);
+  if(val('f082a')) lines.push(mrkLine('082','  ',[{c:'a',v:val('f082a')} ]));
+  if(val('f100a')) lines.push(mrkLine('100','1 ',[{c:'a',v:val('f100a')} ]));
+  lines.push(mrkLine('245','10',[
+    {c:'a',v:val('f245a')},
+    {c:'b',v:val('f245b')},
+    {c:'c',v:val('f245c')}
+  ]));
+  if(val('f264b')||val('f264c')) lines.push(mrkLine('264',' 1',[
+    {c:'b',v:val('f264b')},
+    {c:'c',v:val('f264c')}
+  ]));
+  if(val('f300a')) lines.push(mrkLine('300','  ',[{c:'a',v:val('f300a')} ]));
+  if(val('f650a')) lines.push(mrkLine('650',' 4',[{c:'a',v:val('f650a')} ]));
+
+  document.getElementById('output').value = lines.join('
+');
+  window.currentFormat = 'mrk';
+}
+
+function generateXML(){
+  const xml = [];
+  xml.push('<?xml version="1.0" encoding="UTF-8"?>');
+  xml.push('<collection xmlns="http://www.loc.gov/MARC21/slim">');
+  xml.push('<record>');
+  xml.push('<leader>00000nam a2200000 a 4500</leader>');
+  if(val('f001')) xml.push(`<controlfield tag="001">${val('f001')}</controlfield>`);
+  if(val('f082a')) xml.push(`<datafield tag="082" ind1=" " ind2=" "><subfield code="a">${val('f082a')}</subfield></datafield>`);
+  if(val('f100a')) xml.push(`<datafield tag="100" ind1="1" ind2=" "><subfield code="a">${val('f100a')}</subfield></datafield>`);
+  xml.push(`<datafield tag="245" ind1="1" ind2="0">
+    ${val('f245a')?`<subfield code="a">${val('f245a')}</subfield>`:''}
+    ${val('f245b')?`<subfield code="b">${val('f245b')}</subfield>`:''}
+    ${val('f245c')?`<subfield code="c">${val('f245c')}</subfield>`:''}
+  </datafield>`);
+  if(val('f264b')||val('f264c')) xml.push(`<datafield tag="264" ind1=" " ind2="1">
+    ${val('f264b')?`<subfield code="b">${val('f264b')}</subfield>`:''}
+    ${val('f264c')?`<subfield code="c">${val('f264c')}</subfield>`:''}
+  </datafield>`);
+  if(val('f300a')) xml.push(`<datafield tag="300" ind1=" " ind2=" "><subfield code="a">${val('f300a')}</subfield></datafield>`);
+  if(val('f650a')) xml.push(`<datafield tag="650" ind1=" " ind2="4"><subfield code="a">${val('f650a')}</subfield></datafield>`);
+  xml.push('</record>');
+  xml.push('</collection>');
+  document.getElementById('output').value = xml.join('
+');
+  window.currentFormat = 'xml';
+}
+
+function copyOutput(){
+  const t = document.getElementById('output');
+  t.select();
+  document.execCommand('copy');
+}
+
+function downloadFile(){
+  const text = document.getElementById('output').value;
+  const blob = new Blob([text], {type:'text/plain;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = window.currentFormat==='xml' ? 'record.xml' : 'record.mrk';
+  a.click();
+}
+</script>
+
